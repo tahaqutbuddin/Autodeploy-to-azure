@@ -1,0 +1,74 @@
+# variables:
+#   # Container registry service connection established during pipeline creation
+#   dockerRegistryServiceConnection: 'c58baeb4-87ed-4738-bf2c-7f2b4eaca321'
+#   imageRepository: 'pythonimage'
+#   containerRegistry: 'logixoscontainerreg.azurecr.io'
+#   dockerfilePath: '**/Dockerfile'
+
+parameters:
+- name: env
+  displayName: Environment
+  type: string
+  default: dev
+  values:
+  - dev
+  - test
+
+trigger: none
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Infrastructure_Provisioning
+  displayName: "Provision ACR, Resource group on Azure"
+  jobs:
+    - job: Provision
+      displayName: Validate and provision
+      pool:
+        vmImage: $(vmImageName)
+      steps:
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          backendServiceArm: $(azure-connection)
+          backendAzureRmResourceGroupName: $(storage-resource-group)
+          backendAzureRmStorageAccountName: $(storage-account)
+          backendAzureRmContainerName: $(storage-container)
+          backendAzureRmKey: $(storage-key)
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'plan'
+          environmentServiceNameAzureRM: $(azure-connection)
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          commandOptions: '--auto-approve'
+          environmentServiceNameAzureRM: $(azure-connection)
+    - job: Build_Docker_And_Deploy
+      dependsOn: Provision
+      pool:
+        vmImage: $(vmImageName)
+      steps:
+      - task: DockerInstaller@0
+        inputs:
+          dockerVersion: '17.09.0-ce'
+      - task: Docker@2
+        displayName: Build and publish image to Azure Container Registry
+        inputs:
+          command: buildAndPush
+          repository: $(image-repository)
+          dockerfile: $(docker-file-path)
+          containerRegistry: $(docker-registry-service-connection)
+          tags: |
+            $(tag)
