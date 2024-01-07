@@ -53,7 +53,7 @@ stages:
         inputs:
           provider: 'azurerm'
           command: 'apply'
-          commandOptions: '--auto-approve'
+          commandOptions: '--auto-approve -var environment="${{ parameters.env }}"'
           environmentServiceNameAzureRM: $(azure-connection)
     - job: Build_Docker_And_Deploy
       dependsOn: Provision
