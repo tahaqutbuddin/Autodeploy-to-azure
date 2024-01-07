@@ -6,6 +6,6 @@ variable "acr_container" {
   type = string
 }
 
-variable "rg_name" {
+variable "environment" {
   type = string
 }

@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "rg" {
-  name     = var.rg_name
+  name     = "A4${var.environment}"
   location = var.region
 }
 
