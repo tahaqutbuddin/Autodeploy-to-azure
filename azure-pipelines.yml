@@ -18,9 +18,10 @@ variables:
   storage-account: 'logixosterraform'
   storage-container: 'task4'
   storage-key: 'terraform.tfstate'
-  imgName: 'pythonimage'
-  containerRegistry: 'logixoscontainerreg'
-  vmImageName: 'ubuntu-latest'
+  img-name: 'pythonimage'
+  container-registry: 'logixoscontainerreg'
+  vm-image-name: 'ubuntu-latest'
+  docker-file-path: '$(Build.SourcesDirectory)/Dockerfile'
 
 stages:
 - stage: Infrastructure_Provisioning
@@ -29,7 +30,7 @@ stages:
     - job: Provision
       displayName: Validate and provision
       pool:
-        vmImage: $(vmImageName)
+        vmImage: $(vm-image-name)
       steps:
       - task: TerraformInstaller@1
         inputs:
@@ -61,7 +62,7 @@ stages:
     - job: Build_Docker_And_Deploy
       dependsOn: Provision
       pool:
-        vmImage: $(vmImageName)
+        vmImage: $(vm-image-name)
       steps:
         - task: DockerInstaller@0
           inputs:
@@ -70,7 +71,7 @@ stages:
           inputs:
             command: 'build'
             Dockerfile: $(docker-file-path)
-            repository: $(imgName)
+            repository: $(img-name)
             tags: $(Build.BuildId)
         - task: AzureCLI@2
           displayName: 'Push Docker Image to ACR'
@@ -79,6 +80,6 @@ stages:
             scriptType: 'pscore'
             scriptLocation: 'inlineScript'
             inlineScript: |
-              az acr login --name '$(containerRegistry)'
-              docker tag $(imgName):$(Build.BuildId) $(containerRegistry).azurecr.io/$(imgName):$(Build.BuildId)
-              docker push $(containerRegistry).azurecr.io/$(imgName):$(Build.BuildId)
+              az acr login --name '$(container-registry)'
+              docker tag $(img-name):$(Build.BuildId) $(container-registry).azurecr.io/$(img-name):$(Build.BuildId)
+              docker push $(container-registry).azurecr.io/$(img-name):$(Build.BuildId)
