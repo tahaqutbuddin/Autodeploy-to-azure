@@ -8,7 +8,7 @@ terraform {
 
   backend "azurerm" {
     storage_account_name = "logixosterraform"
-    container_name       = "terraform"
+    container_name       = "task4"
     key                  = "terraform.tfstate"
     resource_group_name  = "terraformStorage"
   }
