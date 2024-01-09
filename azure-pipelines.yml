@@ -35,6 +35,7 @@ stages:
         inputs:
           terraformVersion: 'latest'
       - task: TerraformTaskV4@4
+        displayName: Terrform Init
         inputs:
           provider: 'azurerm'
           command: 'init'
@@ -44,11 +45,14 @@ stages:
           backendAzureRmContainerName: $(storage-container)
           backendAzureRmKey: $(storage-key)
       - task: TerraformTaskV4@4
+        displayName: Terraform Plan
         inputs:
           provider: 'azurerm'
-          command: 'plan -var environment="${{ parameters.env }}"'
+          command: 'plan'
+          commandOptions: '-var environment="${{ parameters.env }}"'
           environmentServiceNameAzureRM: $(azure-connection)
       - task: TerraformTaskV4@4
+        displayName: Terraform Apply
         inputs:
           provider: 'azurerm'
           command: 'apply'
