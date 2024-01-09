@@ -46,7 +46,7 @@ stages:
       - task: TerraformTaskV4@4
         inputs:
           provider: 'azurerm'
-          command: 'plan'
+          command: 'plan -var environment="${{ parameters.env }}"'
           environmentServiceNameAzureRM: $(azure-connection)
       - task: TerraformTaskV4@4
         inputs:
