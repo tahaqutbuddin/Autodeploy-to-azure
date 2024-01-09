@@ -1,10 +1,3 @@
-# variables:
-#   # Container registry service connection established during pipeline creation
-#   dockerRegistryServiceConnection: 'c58baeb4-87ed-4738-bf2c-7f2b4eaca321'
-#   imageRepository: 'pythonimage'
-#   containerRegistry: 'logixoscontainerreg.azurecr.io'
-#   dockerfilePath: '**/Dockerfile'
-
 parameters:
 - name: env
   displayName: Environment
@@ -20,7 +13,13 @@ resources:
 - repo: self
 
 variables:
-  tag: '$(Build.BuildId)'
+  azure-connection: 'logixos-azure-connection'
+  storage-resource-group: 'terraformStorage'
+  storage-account: 'logixosterraform'
+  storage-container: 'task4'
+  storage-key: 'terraform.tfstate'
+  imgName: 'pythonimage'
+  containerRegistry: 'logixoscontainerreg'
   vmImageName: 'ubuntu-latest'
 
 stages:
@@ -60,15 +59,22 @@ stages:
       pool:
         vmImage: $(vmImageName)
       steps:
-      - task: DockerInstaller@0
-        inputs:
-          dockerVersion: '17.09.0-ce'
-      - task: Docker@2
-        displayName: Build and publish image to Azure Container Registry
-        inputs:
-          command: buildAndPush
-          repository: $(image-repository)
-          dockerfile: $(docker-file-path)
-          containerRegistry: $(docker-registry-service-connection)
-          tags: |
-            $(tag)
+        - task: DockerInstaller@0
+          inputs:
+            dockerVersion: '17.09.0-ce'
+        - task: Docker@2
+          inputs:
+            command: 'build'
+            Dockerfile: $(docker-file-path)
+            repository: $(imgName)
+            tags: $(Build.BuildId)
+        - task: AzureCLI@2
+          displayName: 'Push Docker Image to ACR'
+          inputs:
+            azureSubscription: $(azure-connection)
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              az acr login --name '$(containerRegistry)'
+              docker tag $(imgName):$(Build.BuildId) $(containerRegistry).azurecr.io/$(imgName):$(Build.BuildId)
+              docker push $(containerRegistry).azurecr.io/$(imgName):$(Build.BuildId)
